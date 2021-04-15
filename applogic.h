@@ -1,12 +1,13 @@
 #ifndef APPLOGIC_H
 #define APPLOGIC_H
 
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <vector>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-// ыПеречисление доступных функций, выделенных в сегрегированный файл логики
+#define BUFF_SIZE 64
+
+// Перечисление доступных функций, выделенных в сегрегированный файл логики
 enum FuncType
 {
     getData,                                    // функция чтения данных из csv файла
@@ -21,9 +22,12 @@ enum FuncType
  */
 typedef struct
 {
-    const std::string filename;                       // имя файла (функция getData())
-    std::vector<std::vector<std::string>*> *data;     // данные (функция calculateData())
-    std::vector<std::string> *headers;                // заголовки таблицы (функция getData())
+    char* filename;                             // имя файла (функция getData())
+    char ***data;                                     // данные (функция calculateData())
+    char **headers;                                   // заголовки таблицы (функция getData())
+    char **solution;                                  // результат вычислений (для освобождения памяти)
+    size_t len;                                       // число строк в таблице
+    size_t fields_num;                                // число столбцов в таблице
 } FuncArgument;
 
 /*
@@ -31,9 +35,11 @@ typedef struct
  */
 typedef struct
 {
-    std::vector<std::vector<std::string>*> *data;     // данные (функция getData())
-    std::vector<std::string> *headers;                // заголовки таблицы (функция getData())
-    std::vector<std::string> *solution;               // результат вычислений (функция calculateData())
+    char ***data;                                     // данные (функция getData())
+    char **headers;                                   // заголовки таблицы (функция getData())
+    char **solution;                                  // результат вычислений (функция calculateData())
+    size_t len;                                       // число строк в таблице
+    size_t fields_num;                                // число столбцов в таблице
 } FuncReturningValue;
 
 // Объявление точки входа

@@ -36,7 +36,7 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
-    void showData(std::vector<std::string>*, std::vector<std::vector<std::string>*>*);
-    std::vector<std::vector<std::string>*>* getDataFromTable();
+    void showData(FuncReturningValue*);
+    char*** getDataFromTable();
 };
 #endif // MAINWINDOW_H

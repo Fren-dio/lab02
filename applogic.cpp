@@ -1,8 +1,8 @@
 #include "applogic.h"
 
-FuncReturningValue* getDataFromFile(const std::string filename);
-FuncReturningValue* solve(std::vector<std::vector<std::string>*> *data);
-void clean(std::vector<std::string> *headers, std::vector<std::vector<std::string>*> *data);
+FuncReturningValue* getDataFromFile(const char *filename);
+FuncReturningValue* solve(char ***data, size_t fields_num);
+void clean(FuncArgument* args);
 
 // Определение точки входа
 FuncReturningValue* entryPoint(FuncType ft, FuncArgument* fa)
@@ -14,8 +14,10 @@ FuncReturningValue* entryPoint(FuncType ft, FuncArgument* fa)
             result = getDataFromFile(fa->filename);
             break;
         case calculateData:
-            result = solve(fa->data);
+            result = solve(fa->data, fa->fields_num);
             break;
+        case cleanData:
+            clean(fa);
         default:
             result = NULL;
             break;
@@ -24,86 +26,168 @@ FuncReturningValue* entryPoint(FuncType ft, FuncArgument* fa)
     return result;
 }
 
-std::vector<std::string>* readDataRow(std::ifstream &fs)
+void clean2DArray(char **arr, size_t size)
 {
-    std::string headersRow;
-    std::getline(fs, headersRow);
-    std::vector<std::string> *fields = new std::vector<std::string>();
-    fields->push_back("");
-    size_t i = 0;
-    for (char c : headersRow) {
-        if (c == ',')
-        {
-            fields->push_back("");
-            i++;
-        }
-        else
-        {
-            (*fields)[i].push_back(c);
-        }
-    }
-
-    return fields;
-}
-
-
-std::vector<std::vector<std::string>*>* readData(std::ifstream &fs)
-{
-    std::vector<std::vector<std::string>*> *table = new std::vector<std::vector<std::string>*>();
-    std::string row;
-    while (!fs.eof())
+    for (size_t i = 0; i < size; i++)
     {
-        if (fs.bad() || fs.fail())
-        {
-            break;
-        }
-        std::vector<std::string> *fields = readDataRow(fs);
-        table->push_back(fields);
+        free(arr[i]);
     }
-    return table;
+    free(arr);
 }
 
-FuncReturningValue* getDataFromFile(const std::string filename)
+void clean3DArray(char ***arr, size_t sizeX, size_t sizeY)
+{
+    for (size_t i = 0; i < sizeX; i++)
+    {
+        clean2DArray(arr[i], sizeY);
+    }
+    free(arr);
+}
+
+// Функция чтения строк из файла
+char** readfile(FILE* fp, size_t *lines)
+{
+    char line[BUFF_SIZE];
+    size_t llen;
+    size_t counter = 0;
+    size_t max_size = 1;
+    char **data = (char **)calloc(max_size, sizeof(char *));
+    if (data == NULL)
+    {
+        exit(1);
+    }
+
+    while (fgets(line,120,fp))
+    {
+        if (counter >= max_size-1)
+        {
+            data = (char **)realloc(data,max_size * 2 * sizeof(char *));
+            if (data == NULL)
+            {
+                exit(1);
+            }
+            max_size *= 2;
+        }
+        llen = strlen(line);
+        data[counter] = (char *)calloc(sizeof(char), llen+1);
+        strcpy(data[counter], line);
+        counter++;
+    }
+
+    *lines = counter;
+
+    return data;
+}
+
+
+//Функция разбития строки на массив слов
+char** strSplit(char* a_str, size_t *len, const char a_delim)
+{
+    char** result    = 0;
+    size_t count     = 0;
+    char* tmp        = a_str;
+    char* last_comma = 0;
+    char delim[2];
+    delim[0] = a_delim;
+    delim[1] = 0;
+
+    while (*tmp)
+    {
+        if (a_delim == *tmp)
+        {
+            count++;
+            last_comma = tmp;
+        }
+        tmp++;
+    }
+    *len = count + 1;
+
+    count += last_comma < (a_str + strlen(a_str) - 1);
+
+    count++;
+
+    result = (char**)malloc(sizeof(char*) * count);
+
+    if (result)
+    {
+        size_t idx  = 0;
+        char* token = strtok(a_str, delim);
+
+        while (token)
+        {
+            *(result + idx++) = strdup(token);
+            token = strtok(0, delim);
+        }
+        *(result + idx) = 0;
+    }
+
+    return result;
+}
+
+
+FuncReturningValue* getDataFromFile(const char* filename)
 {
     //Инициализируем структуру
     FuncReturningValue *frv = (FuncReturningValue *)malloc(sizeof(FuncReturningValue));
 
     //Открываем файловый поток
-    std::ifstream file(filename);
+    FILE* fp = fopen(filename, "r");
+    size_t lines;
+    size_t fields;
+    char **rawData = readfile(fp, &lines);
+    char ***data = (char***)malloc((lines - 1) * sizeof(char**));
+    for (size_t i = 0; i < lines - 1; i++)
+    {
+        data[i] = strSplit(rawData[i+1], &fields, ',');
+    }
+    lines--;
+
+    char **headers = strSplit(rawData[0], &fields, ',');
+
+    clean2DArray(rawData, lines);
 
     //Заполняем струкутру
-    std::vector<std::string> *headers = readDataRow(file);                //заголовки таблицы
-    std::vector<std::vector<std::string>*> *data = readData(file);         //основные данные
-
+    frv->len = lines;
+    frv->fields_num = fields;
     frv->headers = headers;
     frv->data = data;
 
     return frv;
 }
 
-FuncReturningValue* solve(std::vector<std::vector<std::string>*> *data)
+FuncReturningValue* solve(char ***data, size_t fields_num)
 {
     /*
-     Какие-то вычисления...
+        Какие-то вычисления...
 
-     ... но мы просто вернем первую строку
-     */
-    std::vector<std::string> *dummyResult = data->front();
+        ... но мы просто вернем первую строку
+    */
+    FuncReturningValue *frv = (FuncReturningValue *)malloc(sizeof(FuncReturningValue));
 
-    FuncReturningValue* frv = (FuncReturningValue *)malloc(sizeof(FuncReturningValue));
-    frv->solution = dummyResult;
+    frv->solution = data[0];
+    frv->fields_num = fields_num;
+
     return frv;
 }
 
-void clean(std::vector<std::string> *headers, std::vector<std::vector<std::string>*> *data)
+void clean(FuncArgument* args)
 {
-    delete headers;
-    for (std::vector<std::string>* vector : *data)
+    if (args->data != NULL)
     {
-        delete vector;
+        clean3DArray(args->data, args->len, args->fields_num);
     }
-    data->clear();
-    delete data;
+    if (args->filename != NULL)
+    {
+        free(args->filename);
+    }
+    if (args->headers != NULL)
+    {
+        clean2DArray(args->headers, args->fields_num);
+    }
+    if (args->solution != NULL)
+    {
+        clean2DArray(args->solution, args->fields_num);
+    }
 }
 
 
