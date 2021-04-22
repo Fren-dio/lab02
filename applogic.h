@@ -1,11 +1,9 @@
 #ifndef APPLOGIC_H
 #define APPLOGIC_H
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#define BUFF_SIZE 64
+#include "filemanager.h"
+#include "memory.h"
+#include "stringworks.h"
 
 // Перечисление доступных функций, выделенных в сегрегированный файл логики
 enum FuncType

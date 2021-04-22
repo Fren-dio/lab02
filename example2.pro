@@ -10,12 +10,18 @@ CONFIG += c++11
 
 SOURCES += \
     applogic.cpp \
+    filemanager.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    memory.cpp \
+    stringworks.cpp
 
 HEADERS += \
     applogic.h \
-    mainwindow.h
+    filemanager.h \
+    mainwindow.h \
+    memory.h \
+    stringworks.h
 
 FORMS += \
     mainwindow.ui
